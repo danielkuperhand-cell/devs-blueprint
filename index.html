@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dev's Blueprint</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Nunito+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: one question per screen, a thin progress line on top, big tappable answer tiles, a copyable summary at the end. */
+:root{
+  --bg:#f7f3ee;          /* warm linen */
+  --card:#fffdfa;
+  --fg:#2b2622;
+  --muted:#7a6e66;
+  --line:#e4dbd1;
+  --accent:#b8533f;      /* brick rose */
+  --accent-soft:#f6e3dc;
+  --ok:#3f7a5a;
+  --display:"Fraunces",Georgia,serif;
+  --body:"Nunito Sans",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1c1917;--card:#262220;--fg:#f1ebe4;--muted:#a79c92;--line:#3b3430;
+  --accent:#e08a74;--accent-soft:#3a2a26;--ok:#7fc49c;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1c1917;--card:#262220;--fg:#f1ebe4;--muted:#a79c92;--line:#3b3430;
+  --accent:#e08a74;--accent-soft:#3a2a26;--ok:#7fc49c;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.5;margin:0;padding-block:0 40px;padding-inline:16px}
+.wrap{max-width:560px;margin:0 auto}
+.progress{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding-block:14px 10px;z-index:2}
+.bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.step{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between}
+h1{font-family:var(--display);font-weight:700;font-size:2.1rem;line-height:1.1;margin:0 0 12px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:500;font-size:1.45rem;line-height:1.25;margin:0 0 18px;text-wrap:balance}
+.part{font-family:var(--display);font-style:italic;color:var(--accent);font-size:1rem;margin:0 0 6px}
+p{margin:0 0 14px;max-width:62ch}
+.muted{color:var(--muted);font-size:.95rem}
+.screen{padding-block:18px}
+.opts{display:grid;gap:10px;margin:0 0 18px}
+.opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;font:inherit;color:inherit;cursor:pointer;min-height:54px}
+.opt .box{flex:none;width:22px;height:22px;border-radius:7px;border:2px solid var(--line);background:var(--bg)}
+.opt.multi .box{border-radius:7px}.opt:not(.multi) .box{border-radius:50%}
+.opt.on{border-color:var(--accent);background:var(--accent-soft)}
+.opt.on .box{background:var(--accent);border-color:var(--accent)}
+.opt:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+textarea{width:100%;min-height:120px;font:inherit;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:inherit;resize:vertical}
+.nav{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:8px}
+.btn{font:inherit;font-weight:700;border:none;border-radius:999px;padding:13px 22px;cursor:pointer;background:var(--accent);color:#fff;min-height:48px}
+.btn.ghost{background:transparent;color:var(--muted);padding-inline:8px}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hint{font-size:.85rem;color:var(--muted);margin-top:-8px;margin-bottom:14px}
+.summary{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:16px;font-size:.92rem;white-space:pre-wrap;max-height:50vh;overflow:auto;user-select:all}
+.done{color:var(--ok);font-weight:700}
+.chip{display:inline-block;font-size:.8rem;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:700;margin-bottom:10px}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="progress" id="progress" hidden>
+    <div class="bar"><i id="fill"></i></div>
+    <div class="step"><span id="partName"></span><span id="count"></span></div>
+  </div>
+  <div id="root"></div>
+</div>
+
+<script>
+const PARTS=["What winning looks like","What you bring","Your people","Where the time goes","The tool"];
+const Q=[
+ // part 0
+ {p:0,q:"A year from now, this is working. What's the first thing that's different?",o:["The money stress at home is gone","I'm creating every day and it doesn't feel like work","I have a real community that shows up for each other","I'm known for something specific and people come to me for it"]},
+ {p:0,q:"“Lifts the financial burden off my family.” If you had to put a number on that per month, where does it land?",o:["Under $2,000","$2,000 – $5,000","$5,000 – $10,000","More than $10,000","I honestly haven't done that math"]},
+ {p:0,q:"How soon does that number need to be real?",o:["Within 3 months","Within 6 months","Within a year","No deadline, just direction"]},
+ {p:0,q:"If it only did ONE of these, which would make you say “it worked”?",o:["Steady, predictable income","Freedom with my time","The feeling of helping people","Being seen as a voice for people like me"]},
+ // part 1
+ {p:1,q:"Which of these are live right now?",m:1,o:["The Instagram account and community","Glam By Dev (makeup)","esh candles","Brand deals and sponsored posts","An email list","Something else"]},
+ {p:1,q:"Which of those actually brought money in during the last 3 months?",m:1,o:["Makeup bookings","Candle sales","Brand deals","Affiliate links / commissions","None of these yet"]},
+ {p:1,q:"Of everything you do, which one would you keep if you could only keep one?",o:["Makeup","Candles","Creating content","Talking with the community","Brand collaborations"]},
+ {p:1,q:"Which one drains you the most for what it pays?",o:["Makeup","Candles","Creating content","Brand collaborations","The admin around all of it"]},
+ {p:1,q:"Roughly how many brand deals have you done, total?",o:["1 – 5","6 – 15","16 – 40","More than 40"]},
+ {p:1,q:"The typical brand deal paid you:",o:["Free product only","Under $250","$250 – $1,000","$1,000 – $5,000","Over $5,000","It varies too much to say"]},
+ {p:1,q:"How do brand deals usually find you?",o:["They DM or email me","I pitch them","Through an agency or platform (ShopMy, Linktree, etc.)","Mix of all three"]},
+ // part 2
+ {p:2,q:"When someone messages you, what are they most often saying?",o:["“You inspired me” / “I needed this today”","A question about something I used, wore, or did","A question about weight loss or health","Asking about makeup or candles","Just chatting, like friends"]},
+ {p:2,q:"Picture your ideal follower. She is:",o:["Trying to feel better about herself and her body","Wants a nicer life without spending a fortune","A busy mom who needs permission to enjoy herself","Someone building her own thing and wants a cheerleader","All of the above (that's the problem)"]},
+ {p:2,q:"If you offered something for sale to your followers tomorrow, what would they most likely buy?",o:["A candle or physical product","A makeup lesson or beauty session","A guide, challenge, or workbook","A paid group or membership","A live event or meetup","I don't know — I've never asked"]},
+ {p:2,q:"Have you ever asked them what they want?",o:["Yes, with a poll or question box","Sort of, I read the comments","No, not directly"]},
+ // part 3
+ {p:3,q:"In a normal week, how many hours go to this whole thing (content, deals, products, DMs)?",o:["Under 5","5 – 10","10 – 20","20 – 40","It's basically all the time"]},
+ {p:3,q:"Which part eats the most time?",o:["Filming and editing","Writing captions and emails","Replying to DMs and comments","Chasing brands, invoices, and payments","Making or shipping product","Thinking about what to post"]},
+ {p:3,q:"Which part do you wish would just disappear?",o:["Editing","Writing captions","Invoicing and chasing payments","Keeping track of what's due to whom","Scheduling and posting","None — I like all of it, I just need more hours"]},
+ {p:3,q:"Where do your ideas live right now?",o:["Notes app","Voice memos","In my head","Screenshots and saved posts","Scattered everywhere"]},
+ {p:3,q:"Have you ever missed a deadline, a follow-up, or a payment you were owed because it slipped through?",o:["Never","Once or twice","More than I'd like to admit"]},
+ // part 4
+ {p:4,q:"“Run itself with a few clicks.” Which of these would you actually trust a system to do without you?",m:1,o:["Draft my captions and emails for me to approve","Track deals, deadlines, and payments","Remind me what to post and when","Reply to simple DMs","Ship orders and send receipts","Nothing — I want to be in every step"]},
+ {p:4,q:"And which one must stay 100% you, always?",o:["Replying to people","Deciding what gets posted","Choosing which brands I work with","The look and voice of everything","All of it, the tool just organizes"]},
+ {p:4,q:"Where do you want to use this?",o:["My phone, always","Mostly laptop","Both"]},
+ {p:4,q:"How do you want to feed it ideas?",m:1,o:["Voice notes","Typing","Photos with a quick caption","Forwarding emails and DMs"]},
+ {p:4,q:"How should I show you progress?",o:["One screen: money in, money owed, what's due this week","A weekly text with the three numbers that matter","I'll open it when I need it, don't nag me"]},
+ {p:4,q:"Anything I didn't ask that I should have?",t:1}
+];
+const KEY="dev-blueprint-v1";
+let state={i:-1,a:{}};
+try{const s=localStorage.getItem(KEY);if(s)state=JSON.parse(s)}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+const root=document.getElementById("root"),prog=document.getElementById("progress");
+
+function intro(){
+  prog.hidden=true;
+  root.innerHTML=`<div class="screen">
+   <span class="chip">About 10 minutes</span>
+   <h1>Dev, let's build your thing.</h1>
+   <p>This is the process we've used before when building complementary systems for businesses and talent. It works the same way every time: first we find out what success looks like for you, then we reverse-engineer it, then we wrap technology around whatever is missing.</p>
+   <p>I want to build you something that takes the busywork off your plate so you can just create and talk to people. Before I write a line of code, I need to know what “working” looks like for you.</p>
+   <p class="muted">Tap the answer that's closest. There are no wrong ones, and “I don't know yet” is always fine. Your answers save on this phone as you go.</p>
+   <div class="nav"><span></span><button class="btn" id="start">${state.i>=0?"Pick up where I left off":"Let's go"}</button></div>
+  </div>`;
+  document.getElementById("start").onclick=()=>{if(state.i<0)state.i=0;go(state.i)};
+}
+
+function go(i){
+  state.i=i;save();
+  if(i>=Q.length)return finish();
+  const q=Q[i],ans=state.a[i];
+  prog.hidden=false;
+  document.getElementById("fill").style.width=((i)/Q.length*100)+"%";
+  document.getElementById("partName").textContent="Part "+(q.p+1)+" · "+PARTS[q.p];
+  document.getElementById("count").textContent=(i+1)+" of "+Q.length;
+  let body="";
+  if(q.t){
+    body=`<textarea id="free" placeholder="Anything at all.">${ans?esc(ans):""}</textarea>`;
+  }else{
+    body=`<div class="opts">`+q.o.map((o,k)=>{
+      const on=q.m?(ans||[]).includes(k):ans===k;
+      return `<button class="opt${q.m?" multi":""}${on?" on":""}" data-k="${k}"><span class="box"></span><span>${esc(o)}</span></button>`}).join("")+`</div>`;
+  }
+  root.innerHTML=`<div class="screen">
+    ${q.m?`<p class="hint">Pick all that apply.</p>`:""}
+    <h2>${esc(q.q)}</h2>${body}
+    <div class="nav"><button class="btn ghost" id="back">Back</button><button class="btn" id="next" ${ready(i)?"":"disabled"}>${i===Q.length-1?"Finish":"Next"}</button></div>
+  </div>`;
+  window.scrollTo(0,0);
+  root.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    const k=+b.dataset.k;
+    if(q.m){const s=new Set(state.a[i]||[]);s.has(k)?s.delete(k):s.add(k);state.a[i]=[...s].sort()}
+    else state.a[i]=k;
+    save();
+    if(!q.m){setTimeout(()=>go(i+1),160);b.classList.add("on");return}
+    go(i);
+  });
+  const f=document.getElementById("free");if(f)f.oninput=()=>{state.a[i]=f.value;save();document.getElementById("next").disabled=false};
+  document.getElementById("back").onclick=()=>i===0?intro():go(i-1);
+  document.getElementById("next").onclick=()=>go(i+1);
+}
+function ready(i){const q=Q[i],a=state.a[i];if(q.t)return true;if(q.m)return Array.isArray(a)&&a.length>0;return a!==undefined}
+
+function summaryText(){
+  let out="DEV'S BLUEPRINT — answers\n";
+  let part=-1;
+  Q.forEach((q,i)=>{
+    if(q.p!==part){part=q.p;out+="\n== "+PARTS[part]+" ==\n"}
+    const a=state.a[i];let v;
+    if(q.t)v=(a||"").trim()||"(blank)";
+    else if(q.m)v=(a||[]).map(k=>q.o[k]).join("; ")||"(skipped)";
+    else v=a===undefined?"(skipped)":q.o[a];
+    out+=(i+1)+". "+q.q+"\n   → "+v+"\n";
+  });
+  return out;
+}
+
+async function finish(){
+  prog.hidden=false;
+  document.getElementById("fill").style.width="100%";
+  document.getElementById("partName").textContent="Done";
+  document.getElementById("count").textContent=Q.length+" of "+Q.length;
+  const txt=summaryText();
+  root.innerHTML=`<div class="screen">
+    <h1>That's it. Thank you.</h1>
+    <p>Send these to Danny and the first version gets built around your answers. Tap the button to copy everything, then paste it into a text.</p>
+    <div class="nav" style="justify-content:flex-start;margin-bottom:14px"><button class="btn" id="copy">Copy my answers</button><span id="status" class="muted"></span></div>
+    <div class="summary" id="sum">${esc(txt)}</div>
+    <div class="nav"><button class="btn ghost" id="back">Change something</button><span></span></div>
+  </div>`;
+  document.getElementById("back").onclick=()=>go(Q.length-1);
+  document.getElementById("copy").onclick=async()=>{
+    const st=document.getElementById("status");
+    try{await navigator.clipboard.writeText(txt);st.textContent="Copied.";st.className="done"}
+    catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById("sum"));const s=getSelection();s.removeAllRanges();s.addRange(r);st.textContent="Selected. Long-press to copy."}
+  };
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+state.i>=0&&state.i<Q.length?intro():intro();
+</script>
+</body>
+</html>
