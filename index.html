@@ -204,15 +204,13 @@ async function finish(){
   };
 }
 function compactText(){
-  let out="Dev's Blueprint answers
-
-";
+  const NL=String.fromCharCode(10);
+  let out="Dev's Blueprint answers"+NL+NL;
   Q.forEach((q,i)=>{const a=state.a[i];let v;
     if(q.t)v=(a||"").trim()||"(blank)";
     else if(q.m)v=(a||[]).map(k=>q.o[k]).join("; ")||"(skipped)";
     else v=a===undefined?"(skipped)":q.o[a];
-    out+=(i+1)+". "+v+"
-"});
+    out+=(i+1)+". "+v+NL});
   return out;
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
