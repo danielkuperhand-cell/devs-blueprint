@@ -181,17 +181,39 @@ async function finish(){
   const txt=summaryText();
   root.innerHTML=`<div class="screen">
     <h1>That's it. Thank you.</h1>
-    <p>Send these to Danny and the first version gets built around your answers. Tap the button to copy everything, then paste it into a text.</p>
-    <div class="nav" style="justify-content:flex-start;margin-bottom:14px"><button class="btn" id="copy">Copy my answers</button><span id="status" class="muted"></span></div>
+    <p>Tap <b>Email to Danny</b> and your mail app opens with everything filled in. Just hit send. If that doesn't work on your phone, Download gives you a file to text him, or Copy and paste it anywhere.</p>
+    <div class="nav" style="justify-content:flex-start;flex-wrap:wrap;margin-bottom:6px"><a class="btn" id="mail" href="#">Email to Danny</a><button class="btn ghost" id="dl">Download</button><button class="btn ghost" id="copy">Copy</button></div>
+    <p id="status" class="muted" style="min-height:1.4em"></p>
     <div class="summary" id="sum">${esc(txt)}</div>
     <div class="nav"><button class="btn ghost" id="back">Change something</button><span></span></div>
   </div>`;
   document.getElementById("back").onclick=()=>go(Q.length-1);
+  const short=compactText();
+  const m=document.getElementById("mail");
+  m.href="mailto:accounts@bookitdude.com?subject="+encodeURIComponent("Dev's Blueprint answers")+"&body="+encodeURIComponent(short);
+  m.onclick=()=>{setTimeout(()=>{document.getElementById("status").textContent="If your mail app didn't open, use Download or Copy below."},1500)};
+  document.getElementById("dl").onclick=()=>{
+    const blob=new Blob([txt],{type:"text/plain"});const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);a.download="devs-blueprint-answers.txt";document.body.appendChild(a);a.click();a.remove();
+    document.getElementById("status").textContent="Saved as devs-blueprint-answers.txt. Text it to Danny.";
+  };
   document.getElementById("copy").onclick=async()=>{
     const st=document.getElementById("status");
-    try{await navigator.clipboard.writeText(txt);st.textContent="Copied.";st.className="done"}
+    try{await navigator.clipboard.writeText(txt);st.textContent="Copied. Paste it into a text to Danny.";st.className="done"}
     catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById("sum"));const s=getSelection();s.removeAllRanges();s.addRange(r);st.textContent="Selected. Long-press to copy."}
   };
+}
+function compactText(){
+  let out="Dev's Blueprint answers
+
+";
+  Q.forEach((q,i)=>{const a=state.a[i];let v;
+    if(q.t)v=(a||"").trim()||"(blank)";
+    else if(q.m)v=(a||[]).map(k=>q.o[k]).join("; ")||"(skipped)";
+    else v=a===undefined?"(skipped)":q.o[a];
+    out+=(i+1)+". "+v+"
+"});
+  return out;
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 state.i>=0&&state.i<Q.length?intro():intro();
